@@ -4,20 +4,19 @@
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
     this->ui->log_operations->setReadOnly(true);
-    process = new QProcess(this);
-
-    connect(process, SIGNAL(readyReadStandardOutput()), this, SLOT(read_output()));
-    process->setProgram("cmd");
-    process->start();
 }
 
 MainWindow::~MainWindow() {
-    delete process;
+    delete dir;
     delete ui;
 }
 
 void MainWindow::on_open_folder_btn_clicked(){
     this->folder_name = QFileDialog::getExistingDirectory(this, tr("Open folder"), "/home");
+
+    if (!dir->setCurrent(this->folder_name))
+            qDebug() << "ERROR : Could not change the current working directory";
+
     qDebug() << "Set folder_name : " << this->folder_name << '\n';
     this->ui->log_operations->appendPlainText("Set folder_name : " + this->folder_name + "\n");
 
@@ -28,10 +27,7 @@ void MainWindow::on_open_folder_btn_clicked(){
 }
 
 void MainWindow::on_send_btn_clicked() {
-    QString cd = "cd " + this->folder_name + '\n';
-    process->write(qPrintable(cd));
-    process->write("git status");
-
+    system("git status");
     QString first_command = "git add " + this->folder_name;
     this->ui->log_operations->appendPlainText("First command : " + first_command + "\n");
     qDebug() << first_command << '\n';
@@ -46,8 +42,4 @@ void MainWindow::on_send_btn_clicked() {
 
     this->ui->log_operations->appendPlainText("Done!\n");
     qDebug() << "Done!\n";
-}
-
-void MainWindow::read_output(){
-    qDebug() << process->readAllStandardOutput();
 }
