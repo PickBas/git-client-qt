@@ -8,6 +8,7 @@
 #include <QDir>
 #include <QTextCodec>
 #include <QSettings>
+#include <QMessageBox>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -30,7 +31,6 @@ private slots:
 private:
     Ui::MainWindow *ui;
     QSettings *settings;
-    QDir* dir;
     QProcess* process;
     QString folder_name;
 };

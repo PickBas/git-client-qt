@@ -5,12 +5,12 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     ui->setupUi(this);
     this->ui->log_operations->setReadOnly(true);
 
-    settings = new QSettings("Savings");
+    this->settings = new QSettings("Savings");
 
     QString prev_path = settings->value("path").toString();
 
     if (prev_path.length()) {
-        if (!dir->setCurrent(prev_path)) {
+        if (!QDir::setCurrent(prev_path)) {
                 qDebug() << "ERROR : Could not change the current working directory";
         } else {
             this->folder_name = prev_path;
@@ -18,29 +18,28 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
         }
     }
 
-    process = new QProcess(this);
-    connect(process, SIGNAL(readyReadStandardOutput()), this, SLOT(read_output()));
-    process->setProgram("git");
+   this-> process = new QProcess(this);
+
+    connect(this->process, SIGNAL(readyReadStandardOutput()), this, SLOT(read_output()));
 }
 
 MainWindow::~MainWindow() {
-    process->kill();
-    delete settings;
     delete process;
-    delete dir;
+    delete settings;
     delete ui;
 }
 
 void MainWindow::on_open_folder_btn_clicked(){
     this->folder_name = QFileDialog::getExistingDirectory(this, tr("Open folder"), "/home");
 
-    if (!dir->setCurrent(this->folder_name))
-            qDebug() << "ERROR : Could not change the current working directory";
+    if (!QDir::setCurrent(this->folder_name)) {
+        qDebug() << "ERROR : Could not change the current working directory";
+    }
 
     qDebug() << "Set folder_name : " << this->folder_name << '\n';
     this->ui->log_operations->appendPlainText("Set folder_name : " + this->folder_name + "\n");
 
-    settings->setValue("path", this->folder_name);
+    this->settings->setValue("path", this->folder_name);
 
     this->ui->label->setText(this->folder_name);
 
@@ -49,29 +48,38 @@ void MainWindow::on_open_folder_btn_clicked(){
 }
 
 void MainWindow::on_send_btn_clicked() {
+    this->process->setParent(this);
+
+    QString commit = this->ui->commit_text->text();
+
+    if (!commit.length()) {
+        QMessageBox::warning(this, "Warning", "Write a commit!");
+    }
+
     QStringList args;
     args << "status";
-    process->setArguments(args);
-    process->start();
-    process->waitForFinished();
-    QString first_command = "git add .";
-    this->ui->log_operations->appendPlainText("First command : " + first_command + "\n");
-    qDebug() << first_command << '\n';
+    this->process->start("git", args);
+    this->process->waitForFinished(5000);
 
-    QString second_command = "git commit -m \"" + this->ui->commit_text->text() + "\"";
-    this->ui->log_operations->appendPlainText("Second command : " + second_command + "\n");
-    qDebug() << second_command << '\n';
+    args.clear();
+    args << "add" << ".";
+    this->process->start("git", args);
+    this->process->waitForFinished(5000);
 
-    QString third_command = "git push";
-    this->ui->log_operations->appendPlainText("Third command : " + third_command + "\n");
-    qDebug() << third_command << '\n';
+    args.clear();
+    QString com_text = "\"" + this->ui->commit_text->text() + "\"";
+    args << "commit" << "-m" << com_text;
+    this->process->start("git", args);
+    this->process->waitForFinished(5000);
 
-    this->ui->log_operations->appendPlainText("Done!\n");
-    qDebug() << "Done!\n";
+    args.clear();
+    args << "push";
+    this->process->start("git", args);
+    this->process->waitForFinished(5000);
 }
 
 void MainWindow::read_output(){
-    QString data =  QString::fromStdString(process->readAllStandardOutput().toStdString());
+    QString data =  QString::fromStdString(this->process->readAllStandardOutput().toStdString());
     auto q = data.split(QRegExp("\n|\r\n|\r"), QString::SkipEmptyParts);
     for (auto& i : q) {
         qDebug() << i << '\n';
