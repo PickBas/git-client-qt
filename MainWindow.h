@@ -6,6 +6,8 @@
 #include <QDebug>
 #include <QProcess>
 #include <QDir>
+#include <QTextCodec>
+#include <QSettings>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -23,9 +25,13 @@ private slots:
 
     void on_send_btn_clicked();
 
+    void read_output();
+
 private:
     Ui::MainWindow *ui;
+    QSettings *settings;
     QDir* dir;
+    QProcess* process;
     QString folder_name;
 };
 
