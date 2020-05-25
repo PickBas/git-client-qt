@@ -20,11 +20,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
         } else {
             this->folder_name = prev_path;
             ui->label->setText(prev_path);
-
+            get_branches();
         }
     }
-
-    get_branches();
 }
 
 void MainWindow::get_branches(){
@@ -38,12 +36,19 @@ void MainWindow::get_branches(){
 void MainWindow::append_branches_to_menu(){
     this->current_output.removeAll("->");
     this->current_output.removeAll("*");
-//    for (const auto& i : this->current_output) {
-//        qDebug() << i << '\n';
-//    }
+
+    for (QString& branch : this->current_output) {
+        branch.replace("remotes/", "");
+        branch.replace("origin/", "");
+    }
+
+    this->current_output.removeAll("HEAD");
+    this->current_output.removeDuplicates();
+
     for (const QString& branch : this->current_output) {
         this->ui->menubranch->addAction(branch);
     }
+
     this->current_output.clear();
 }
 
@@ -56,18 +61,23 @@ MainWindow::~MainWindow() {
 void MainWindow::on_open_folder_btn_clicked(){
     this->folder_name = QFileDialog::getExistingDirectory(this, tr("Open folder"), "/home");
 
-    if (!QDir::setCurrent(this->folder_name))
+    if (!QDir::setCurrent(this->folder_name)) {
         this->ui->log_operations->appendPlainText("ERROR : Could not change the current working directory\n");
+    } else {
 
-    this->ui->log_operations->appendPlainText("Set folder_name : " + this->folder_name + "\n");
+        this->ui->log_operations->appendPlainText("Set folder_name : " + this->folder_name + "\n");
 
-    this->settings->setValue("path", this->folder_name);
+        this->settings->setValue("path", this->folder_name);
 
-    this->ui->label->setText(this->folder_name);
+        this->ui->label->setText(this->folder_name);
 
-    this->ui->log_operations->appendPlainText("Set label : " + this->folder_name + "\n");
+        this->ui->log_operations->appendPlainText("Set label : " + this->folder_name + "\n");
 
-    get_branches();
+        this->ui->menubranch->clear();
+
+        get_branches();
+    }
+
 }
 
 void MainWindow::on_send_btn_clicked() {
@@ -105,7 +115,7 @@ void MainWindow::on_send_btn_clicked() {
 void MainWindow::read_output(){
     QString data =  QString::fromStdString(this->process->readAllStandardOutput().toStdString());
     this->current_output = data.split(QRegExp("\n|\r\n|\r| "), QString::SkipEmptyParts);
-//    for (const QString& i : this->current_output) {
-//        qDebug() << i << '\n';
-//    }
+    //    for (const QString& i : this->current_output) {
+    //        qDebug() << i << '\n';
+    //    }
 }
