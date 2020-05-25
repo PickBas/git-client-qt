@@ -35,6 +35,7 @@ private:
     Ui::MainWindow *ui;
     QSettings *settings;
     QProcess* process;
+    QString current_branch;
     QStringList current_output;
     QString folder_name;
 };

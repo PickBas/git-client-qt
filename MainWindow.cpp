@@ -30,7 +30,8 @@ void MainWindow::get_branches(){
     args << "branch" << "-a";
     this->process->start("git", args);
     this->process->waitForFinished(5000);
-    append_branches_to_menu();
+    if (!this->current_output.isEmpty())
+        append_branches_to_menu();
 }
 
 void MainWindow::append_branches_to_menu(){
@@ -49,7 +50,23 @@ void MainWindow::append_branches_to_menu(){
         this->ui->menubranch->addAction(branch);
     }
 
+    for (QAction* action : this->ui->menubranch->actions()) {
+        connect(action, &QAction::triggered, this, [=]() {
+            this->checkout_branch(action->text());
+            this->current_output.clear();
+        });
+    }
+
     this->current_output.clear();
+}
+
+void MainWindow::checkout_branch(const QString &branch){
+    QStringList args;
+    args << "checkout" << branch;
+    this->process->start("git", args);
+    this->process->waitForFinished(5000);
+    this->current_branch =  branch;
+    this->ui->menubranch->setTitle(this->current_branch);
 }
 
 MainWindow::~MainWindow() {
