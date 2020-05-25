@@ -19,6 +19,9 @@ class MainWindow : public QMainWindow {
 
 public:
     MainWindow(QWidget *parent = nullptr);
+    void get_branches();
+    void append_branches_to_menu();
+    void checkout_branch(const QString& branch);
     ~MainWindow();
 
 private slots:
@@ -32,6 +35,7 @@ private:
     Ui::MainWindow *ui;
     QSettings *settings;
     QProcess* process;
+    QStringList current_output;
     QString folder_name;
 };
 
