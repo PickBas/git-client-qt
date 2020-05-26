@@ -28,6 +28,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     connect(this->process, SIGNAL(readyReadStandardOutput()), this, SLOT(read_output()));
     this->tray->setIcon(QIcon(":/pic/Git-Icon.png"));
     this->tray->show();
+    this->tray->setToolTip("Git client");
 
     check_git();
 
@@ -37,7 +38,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
         } else {
             this->folder_name = prev_path;
             ui->label->setText(prev_path);
-            get_branches();
+            if(check_git_in_folder()) {
+                get_branches();
+            }
         }
     }
 }
@@ -68,19 +71,8 @@ void MainWindow::get_branches(){
     args << "branch" << "-a";
     this->process->start("git", args);
     this->process->waitForFinished(5000);
+    append_branches_to_menu();
 
-    if (!this->current_output.isEmpty()) {
-        append_branches_to_menu();
-    } else {
-        quint8 answer = QMessageBox::warning(this, "Git", this->folder_name + " has no .git",
-                                             "Change", "Quit");
-        if (!answer) {
-            this->current_output.clear();
-            on_open_folder_btn_clicked();
-        } else {
-            exit(0);
-        }
-    }
 }
 
 void MainWindow::append_branches_to_menu(){
@@ -129,6 +121,45 @@ void MainWindow::set_checked_action(){
             action->setChecked(false);
         }
     }
+}
+
+bool MainWindow::check_git_in_folder(){
+    QStringList args;
+
+    args << "status";
+    this->process->start("git", args);
+    this->process->waitForFinished(5000);
+
+    if (!this->current_output.isEmpty()) {
+        this->current_output.clear();
+        return true;
+    }
+
+    quint8 answer = QMessageBox::warning(this, "Git", this->folder_name + " has no .git",
+                                         "Initialize", "Change", "Quit");
+    if (!answer) {
+        args.clear();
+        args << "init";
+        this->process->start("git", args);
+        this->process->waitForFinished(5000);
+
+        QString notif_body;
+
+        for(const QString& word: current_output) {
+            notif_body += word + " ";
+        }
+
+        show_notification("Done!", notif_body);
+
+        this->current_output.clear();
+
+    } else if (answer == 1) {
+        this->current_output.clear();
+        on_open_folder_btn_clicked();
+    } else {
+        exit(0);
+    }
+    return true;
 }
 
 void MainWindow::show_notification(const QString& notification_header,const QString& notification_body){
@@ -196,24 +227,24 @@ void MainWindow::on_send_btn_clicked() {
         } else if (this->ui->operations_comboBox->currentText() == "Commit & push") {
             quint8 answer = QMessageBox::question(this, "Check", "Commit: " + commit + "\nBranch: " + this->current_branch + "\n\nIs it corrent?", "Yes", "No");
             if (!answer) {
-                    args << "add" << ".";
-                    this->process->start("git", args);
-                    this->process->waitForFinished(5000);
+                args << "add" << ".";
+                this->process->start("git", args);
+                this->process->waitForFinished(5000);
 
-                    args.clear();
-                    args << "commit" << "-m" << this->ui->commit_text->text();
-                    this->process->start("git", args);
-                    this->process->waitForFinished(5000);
+                args.clear();
+                args << "commit" << "-m" << this->ui->commit_text->text();
+                this->process->start("git", args);
+                this->process->waitForFinished(5000);
 
-                    args.clear();
-                    args << "push" << "origin" << this->current_branch;
-                    this->process->start("git", args);
-                    this->process->waitForFinished(5000);
-                    if (this->current_output.size())
-                        show_notification("Done!", "Commited: " + this->ui->commit_text->text() + ";\nPushed: " + this->current_branch);
-                    else
-                        show_notification("Oops!", "Something went wrong!");
-                    this->current_output.clear();
+                args.clear();
+                args << "push" << "origin" << this->current_branch;
+                this->process->start("git", args);
+                this->process->waitForFinished(5000);
+                if (this->current_output.size())
+                    show_notification("Done!", "Commited: " + this->ui->commit_text->text() + ";\nPushed: " + this->current_branch);
+                else
+                    show_notification("Oops!", "Something went wrong!");
+                this->current_output.clear();
             }
         } else {
             args.clear();

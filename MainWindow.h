@@ -29,6 +29,7 @@ public:
     void get_branches();
     void append_branches_to_menu();
     void set_checked_action();
+    bool check_git_in_folder();
     void show_notification(const QString&,const QString&);
     void checkout_branch(const QString&);
     ~MainWindow();
