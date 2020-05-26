@@ -3,7 +3,6 @@
 
 #include <QMainWindow>
 #include <QFileDialog>
-#include <iostream>
 #include <QProcess>
 #include <QDir>
 #include <QTextCodec>
@@ -11,6 +10,7 @@
 #include <QDesktopServices>
 #include <QUrl>
 #include <QMessageBox>
+#include <DialogNewBranch.h>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -33,6 +33,8 @@ private slots:
     void on_send_btn_clicked();
 
     void read_output();
+
+    void on_actionCreate_branch_triggered();
 
 private:
     Ui::MainWindow *ui;

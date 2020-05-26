@@ -84,10 +84,16 @@
      </property>
     </widget>
     <addaction name="menuBranches"/>
+    <addaction name="actionCreate_branch"/>
    </widget>
    <addaction name="menubranch"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
+  <action name="actionCreate_branch">
+   <property name="text">
+    <string>Create branch</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>

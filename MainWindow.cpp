@@ -1,5 +1,6 @@
 #include "MainWindow.h"
 #include "ui_MainWindow.h"
+#include <QDebug>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
@@ -12,6 +13,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     this->ui->operations_comboBox->lineEdit()->setAlignment(Qt::AlignCenter);
     this->ui->operations_comboBox->addItem("Commit");
     this->ui->operations_comboBox->addItem("Commit & push");
+
+    QTextCodec* codec = QTextCodec::codecForName("UTF-8");
+    QTextCodec::setCodecForLocale(codec);
 
     this->settings = new QSettings("Savings");
 
@@ -66,6 +70,7 @@ void MainWindow::get_branches(){
         quint8 answer = QMessageBox::warning(this, "Git", this->folder_name + " has no .git",
                                              "Change", "Quit");
         if (!answer) {
+            this->current_output.clear();
             on_open_folder_btn_clicked();
         } else {
             exit(0);
@@ -169,12 +174,32 @@ void MainWindow::on_send_btn_clicked() {
             this->current_output.clear();
         }
     }
+    this->current_output.clear();
 }
 
 void MainWindow::read_output(){
     QString data =  QString::fromStdString(this->process->readAllStandardOutput().toStdString());
     this->current_output = data.split(QRegExp("\n|\r\n|\r| "), QString::SkipEmptyParts);
-    //    for (const QString& i : this->current_output) {
-    //        qDebug() << i << '\n';
-    //    }
+//    for (const QString& i : this->current_output) {
+//        qDebug() << i << '\n';
+//    }
+}
+
+void MainWindow::on_actionCreate_branch_triggered(){
+    DialogNewBranch d(this);
+    if (d.exec() != QDialog::Rejected) {
+        QStringList args;
+        args << "checkout" << "-b" <<  d.get_branch_name();
+        this->process->start("git", args);
+        this->process->waitForFinished(5000);
+
+        get_branches();
+
+        if (d.get_branch_name() != this->ui->menuBranches->title()) {
+            QMessageBox::critical(this, "ERROR", "Invalind branch name");
+            on_actionCreate_branch_triggered();
+        } else {
+            this->current_output.clear();
+        }
+    }
 }
