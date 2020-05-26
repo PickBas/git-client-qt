@@ -7,6 +7,12 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     this->current_output.clear();
 
+    this->ui->operations_comboBox->setEditable(true);
+    this->ui->operations_comboBox->lineEdit()->setReadOnly(true);
+    this->ui->operations_comboBox->lineEdit()->setAlignment(Qt::AlignCenter);
+    this->ui->operations_comboBox->addItem("Commit");
+    this->ui->operations_comboBox->addItem("Commit & push");
+
     this->settings = new QSettings("Savings");
 
     QString prev_path = settings->value("path").toString();
@@ -14,13 +20,14 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     connect(this->process, SIGNAL(readyReadStandardOutput()), this, SLOT(read_output()));
 
+    check_git();
+
     if (prev_path.length()) {
         if (!QDir::setCurrent(prev_path)) {
             this->ui->log_operations->appendPlainText("ERROR : Could not change the current working directory\n");
         } else {
             this->folder_name = prev_path;
             ui->label->setText(prev_path);
-            check_git();
             get_branches();
         }
     }
@@ -38,10 +45,12 @@ void MainWindow::check_git(){
     } else {
         quint8 answer = QMessageBox::warning(this, "Git", "You don't have git installed on your PC.",
                                              "Install", "Quit");
-        if (answer == 0)
+        if (!answer) {
             QDesktopServices::openUrl(QUrl("https://git-scm.com/", QUrl::TolerantMode));
-        else
-            exit(1);
+            exit(0);
+        } else {
+            exit(0);
+        }
     }
 }
 
@@ -50,8 +59,18 @@ void MainWindow::get_branches(){
     args << "branch" << "-a";
     this->process->start("git", args);
     this->process->waitForFinished(5000);
-    if (!this->current_output.isEmpty())
+
+    if (!this->current_output.isEmpty()) {
         append_branches_to_menu();
+    } else {
+        quint8 answer = QMessageBox::warning(this, "Git", this->folder_name + " has no .git",
+                                             "Change", "Quit");
+        if (!answer) {
+            on_open_folder_btn_clicked();
+        } else {
+            exit(0);
+        }
+    }
 }
 
 void MainWindow::append_branches_to_menu(){
@@ -63,7 +82,7 @@ void MainWindow::append_branches_to_menu(){
 
         if(this->current_output[i] == "*") {
             this->current_branch = this->current_output[i + 1];
-            this->ui->menubranch->setTitle(this->current_branch);
+            this->ui->menuBranches->setTitle(this->current_branch);
         }
     }
 
@@ -73,10 +92,10 @@ void MainWindow::append_branches_to_menu(){
     this->current_output.removeDuplicates();
 
     for (const QString& branch : this->current_output) {
-        this->ui->menubranch->addAction(branch);
+        this->ui->menuBranches->addAction(branch);
     }
 
-    for (QAction* action : this->ui->menubranch->actions()) {
+    for (QAction* action : this->ui->menuBranches->actions()) {
         connect(action, &QAction::triggered, this, [=]() {
             this->checkout_branch(action->text());
             this->current_output.clear();
@@ -92,7 +111,7 @@ void MainWindow::checkout_branch(const QString &branch){
     this->process->start("git", args);
     this->process->waitForFinished(5000);
     this->current_branch =  branch;
-    this->ui->menubranch->setTitle(this->current_branch);
+    this->ui->menuBranches->setTitle(this->current_branch);
 }
 
 MainWindow::~MainWindow() {
@@ -107,16 +126,11 @@ void MainWindow::on_open_folder_btn_clicked(){
     if (!QDir::setCurrent(this->folder_name)) {
         this->ui->log_operations->appendPlainText("ERROR : Could not change the current working directory\n");
     } else {
-
         this->ui->log_operations->appendPlainText("Set folder_name : " + this->folder_name + "\n");
-
         this->settings->setValue("path", this->folder_name);
-
         this->ui->label->setText(this->folder_name);
-
         this->ui->log_operations->appendPlainText("Set label : " + this->folder_name + "\n");
-
-        this->ui->menubranch->clear();
+        this->ui->menuBranches->clear();
 
         get_branches();
     }
@@ -148,10 +162,12 @@ void MainWindow::on_send_btn_clicked() {
         this->process->waitForFinished(5000);
 
         args.clear();
-        args << "push";
-        this->process->start("git", args);
-        this->process->waitForFinished(5000);
-        this->current_output.clear();
+        if(this->ui->operations_comboBox->currentText() == "Commit & push") {
+            args << "push";
+            this->process->start("git", args);
+            this->process->waitForFinished(5000);
+            this->current_output.clear();
+        }
     }
 }
 

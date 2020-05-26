@@ -20,7 +20,7 @@
       <x>130</x>
       <y>40</y>
       <width>361</width>
-      <height>231</height>
+      <height>237</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -48,9 +48,12 @@
         </widget>
        </item>
        <item>
+        <widget class="QComboBox" name="operations_comboBox"/>
+       </item>
+       <item>
         <widget class="QPushButton" name="send_btn">
          <property name="text">
-          <string>Send</string>
+          <string>Submit</string>
          </property>
         </widget>
        </item>
@@ -75,6 +78,12 @@
     <property name="title">
      <string>branch</string>
     </property>
+    <widget class="QMenu" name="menuBranches">
+     <property name="title">
+      <string>Branches</string>
+     </property>
+    </widget>
+    <addaction name="menuBranches"/>
    </widget>
    <addaction name="menubranch"/>
   </widget>
