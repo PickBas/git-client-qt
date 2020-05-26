@@ -8,6 +8,8 @@
 #include <QDir>
 #include <QTextCodec>
 #include <QSettings>
+#include <QDesktopServices>
+#include <QUrl>
 #include <QMessageBox>
 
 QT_BEGIN_NAMESPACE
@@ -19,6 +21,7 @@ class MainWindow : public QMainWindow {
 
 public:
     MainWindow(QWidget *parent = nullptr);
+    void check_git();
     void get_branches();
     void append_branches_to_menu();
     void checkout_branch(const QString& branch);

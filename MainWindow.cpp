@@ -20,8 +20,27 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
         } else {
             this->folder_name = prev_path;
             ui->label->setText(prev_path);
+            check_git();
             get_branches();
         }
+    }
+}
+
+void MainWindow::check_git(){
+    QStringList args;
+    args << "--version";
+    this->process->start("git", args);
+    this->process->waitForFinished(5000);
+
+    if (this->current_output.isEmpty()) {
+        this->current_output.clear();
+        return;
+    } else {
+        quint8 answer = QMessageBox::warning(this, "Git", "You don't have git installed on your PC.", "Install", "Quit");
+        if (answer == 0)
+            QDesktopServices::openUrl(QUrl("https://git-scm.com/", QUrl::TolerantMode));
+        else
+            exit(1);
     }
 }
 
