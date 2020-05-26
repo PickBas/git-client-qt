@@ -10,6 +10,8 @@
 #include <QDesktopServices>
 #include <QUrl>
 #include <QMessageBox>
+#include <QSystemTrayIcon>
+#include <QIcon>
 #include <DialogNewBranch.h>
 
 // TODO: push and commit sep
@@ -26,7 +28,8 @@ public:
     void check_git();
     void get_branches();
     void append_branches_to_menu();
-    void checkout_branch(const QString& branch);
+    void show_notification(const QString&,const QString&);
+    void checkout_branch(const QString&);
     ~MainWindow();
 
 private slots:
@@ -45,6 +48,7 @@ private:
     QString current_branch;
     QStringList current_output;
     QString folder_name;
+    QSystemTrayIcon* tray;
 };
 
 #endif // MAINWINDOW_H

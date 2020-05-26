@@ -4,6 +4,7 @@
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
+    this->setWindowIcon(QIcon(":/pic/Git-Icon.png"));
 
     this->current_output.clear();
 
@@ -21,8 +22,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     QString prev_path = settings->value("path").toString();
     this->process = new QProcess(this);
+    this->tray = new QSystemTrayIcon(this);
 
     connect(this->process, SIGNAL(readyReadStandardOutput()), this, SLOT(read_output()));
+    this->tray->setIcon(QIcon(":/pic/Git-Icon.png"));
+    this->tray->show();
 
     check_git();
 
@@ -111,6 +115,10 @@ void MainWindow::append_branches_to_menu(){
     this->current_output.clear();
 }
 
+void MainWindow::show_notification(const QString& notification_header,const QString& notification_body){
+    this->tray->showMessage(notification_header, notification_body, QIcon(":/pic/Git-Icon.png"), 3000);
+}
+
 void MainWindow::checkout_branch(const QString &branch){
     QStringList args;
     args << "checkout" << branch;
@@ -121,6 +129,7 @@ void MainWindow::checkout_branch(const QString &branch){
 }
 
 MainWindow::~MainWindow() {
+    delete tray;
     delete process;
     delete settings;
     delete ui;
@@ -156,11 +165,16 @@ void MainWindow::on_send_btn_clicked() {
             args << "add" << ".";
             this->process->start("git", args);
             this->process->waitForFinished(5000);
+            this->current_output.clear();
 
             args.clear();
             args << "commit" << "-m" << this->ui->commit_text->text();
             this->process->start("git", args);
             this->process->waitForFinished(5000);
+
+            show_notification("Done!", "Commited: " + this->ui->commit_text->text());
+
+
         } else if (this->ui->operations_comboBox->currentText() == "Commit & push") {
             quint8 answer = QMessageBox::question(this, "Check", "Commit: " + commit + "\nBranch: " + this->current_branch + "\n\nIs it corrent?", "Yes", "No");
             if (!answer) {
@@ -193,9 +207,6 @@ void MainWindow::on_send_btn_clicked() {
 void MainWindow::read_output(){
     QString data =  QString::fromStdString(this->process->readAllStandardOutput().toStdString());
     this->current_output = data.split(QRegExp("\n|\r\n|\r| "), QString::SkipEmptyParts);
-    //    for (const QString& i : this->current_output) {
-    //        qDebug() << i << '\n';
-    //    }
 }
 
 void MainWindow::on_actionCreate_branch_triggered(){
