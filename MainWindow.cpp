@@ -11,6 +11,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     this->ui->operations_comboBox->setEditable(true);
     this->ui->operations_comboBox->lineEdit()->setReadOnly(true);
     this->ui->operations_comboBox->lineEdit()->setAlignment(Qt::AlignCenter);
+
     this->ui->operations_comboBox->addItem("Commit");
     this->ui->operations_comboBox->addItem("Commit & push");
     this->ui->operations_comboBox->addItem("push");
@@ -102,8 +103,11 @@ void MainWindow::append_branches_to_menu(){
 
     this->ui->menuBranches->clear();
 
-    for (const QString& branch : this->current_output)
-        this->ui->menuBranches->addAction(branch);
+    for (const QString& branch : this->current_output) {
+        QAction* action = new QAction(branch);
+        action->setCheckable(true);
+        this->ui->menuBranches->addAction(action);
+    }
 
     for (QAction* action : this->ui->menuBranches->actions()) {
         connect(action, &QAction::triggered, this, [=]() {
@@ -112,7 +116,19 @@ void MainWindow::append_branches_to_menu(){
         });
     }
 
+    set_checked_action();
+
     this->current_output.clear();
+}
+
+void MainWindow::set_checked_action(){
+    for (QAction* action : this->ui->menuBranches->actions()) {
+        if(action->text() == this->current_branch) {
+            action->setChecked(true);
+        } else {
+            action->setChecked(false);
+        }
+    }
 }
 
 void MainWindow::show_notification(const QString& notification_header,const QString& notification_body){
@@ -124,7 +140,8 @@ void MainWindow::checkout_branch(const QString &branch){
     args << "checkout" << branch;
     this->process->start("git", args);
     this->process->waitForFinished(5000);
-    this->current_branch =  branch;
+    this->current_branch = branch;
+    set_checked_action();
     this->ui->menuBranches->setTitle(this->current_branch);
 }
 
