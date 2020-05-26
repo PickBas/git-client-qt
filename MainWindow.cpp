@@ -13,6 +13,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     this->ui->operations_comboBox->lineEdit()->setAlignment(Qt::AlignCenter);
     this->ui->operations_comboBox->addItem("Commit");
     this->ui->operations_comboBox->addItem("Commit & push");
+    this->ui->operations_comboBox->addItem("push");
 
     QTextCodec* codec = QTextCodec::codecForName("UTF-8");
     QTextCodec::setCodecForLocale(codec);
@@ -96,9 +97,10 @@ void MainWindow::append_branches_to_menu(){
     this->current_output.removeAll("HEAD");
     this->current_output.removeDuplicates();
 
-    for (const QString& branch : this->current_output) {
+    this->ui->menuBranches->clear();
+
+    for (const QString& branch : this->current_output)
         this->ui->menuBranches->addAction(branch);
-    }
 
     for (QAction* action : this->ui->menuBranches->actions()) {
         connect(action, &QAction::triggered, this, [=]() {
@@ -151,24 +153,36 @@ void MainWindow::on_send_btn_clicked() {
         QMessageBox::warning(this, "Warning", "Write a commit!");
     } else {
         QStringList args;
-        args << "status";
-        this->process->start("git", args);
-        this->process->waitForFinished(5000);
+        if(this->ui->operations_comboBox->currentText() == "Commit") {
+            args << "add" << ".";
+            this->process->start("git", args);
+            this->process->waitForFinished(5000);
 
-        args.clear();
-        args << "add" << ".";
-        this->process->start("git", args);
-        this->process->waitForFinished(5000);
+            args.clear();
+            args << "commit" << "-m" << this->ui->commit_text->text();
+            this->process->start("git", args);
+            this->process->waitForFinished(5000);
+        } else if (this->ui->operations_comboBox->currentText() == "Commit & push") {
+            quint8 answer = QMessageBox::question(this, "Check", "Commit: " + commit + "\nBranch: " + this->current_branch + "\n\nIs it corrent?", "Yes", "No");
+            if (!answer) {
+                    args << "add" << ".";
+                    this->process->start("git", args);
+                    this->process->waitForFinished(5000);
 
-        args.clear();
-        QString com_text = "\"" + this->ui->commit_text->text() + "\"";
-        args << "commit" << "-m" << com_text;
-        this->process->start("git", args);
-        this->process->waitForFinished(5000);
+                    args.clear();
+                    args << "commit" << "-m" << this->ui->commit_text->text();
+                    this->process->start("git", args);
+                    this->process->waitForFinished(5000);
 
-        args.clear();
-        if(this->ui->operations_comboBox->currentText() == "Commit & push") {
-            args << "push";
+                    args.clear();
+                    args << "push" << "origin" << this->current_branch;
+                    this->process->start("git", args);
+                    this->process->waitForFinished(5000);
+                    this->current_output.clear();
+            }
+        } else {
+            args.clear();
+            args << "push" << "origin" << this->current_branch;
             this->process->start("git", args);
             this->process->waitForFinished(5000);
             this->current_output.clear();
@@ -180,9 +194,9 @@ void MainWindow::on_send_btn_clicked() {
 void MainWindow::read_output(){
     QString data =  QString::fromStdString(this->process->readAllStandardOutput().toStdString());
     this->current_output = data.split(QRegExp("\n|\r\n|\r| "), QString::SkipEmptyParts);
-//    for (const QString& i : this->current_output) {
-//        qDebug() << i << '\n';
-//    }
+    //    for (const QString& i : this->current_output) {
+    //        qDebug() << i << '\n';
+    //    }
 }
 
 void MainWindow::on_actionCreate_branch_triggered(){

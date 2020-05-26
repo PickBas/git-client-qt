@@ -12,6 +12,8 @@
 #include <QMessageBox>
 #include <DialogNewBranch.h>
 
+// TODO: push and commit sep
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
