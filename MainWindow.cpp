@@ -4,7 +4,6 @@
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
-    this->ui->log_operations->setReadOnly(true);
 
     this->current_output.clear();
 
@@ -29,7 +28,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     if (prev_path.length()) {
         if (!QDir::setCurrent(prev_path)) {
-            this->ui->log_operations->appendPlainText("ERROR : Could not change the current working directory\n");
+            //this->ui->log_operations->appendPlainText("ERROR : Could not change the current working directory\n");
         } else {
             this->folder_name = prev_path;
             ui->label->setText(prev_path);
@@ -131,12 +130,12 @@ void MainWindow::on_open_folder_btn_clicked(){
     this->folder_name = QFileDialog::getExistingDirectory(this, tr("Open folder"), "/home");
 
     if (!QDir::setCurrent(this->folder_name)) {
-        this->ui->log_operations->appendPlainText("ERROR : Could not change the current working directory\n");
+        //this->ui->log_operations->appendPlainText("ERROR : Could not change the current working directory\n");
     } else {
-        this->ui->log_operations->appendPlainText("Set folder_name : " + this->folder_name + "\n");
+        //this->ui->log_operations->appendPlainText("Set folder_name : " + this->folder_name + "\n");
         this->settings->setValue("path", this->folder_name);
         this->ui->label->setText(this->folder_name);
-        this->ui->log_operations->appendPlainText("Set label : " + this->folder_name + "\n");
+        //this->ui->log_operations->appendPlainText("Set label : " + this->folder_name + "\n");
         this->ui->menuBranches->clear();
 
         get_branches();
