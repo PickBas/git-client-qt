@@ -32,7 +32,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     if (prev_path.length()) {
         if (!QDir::setCurrent(prev_path)) {
-            //this->ui->log_operations->appendPlainText("ERROR : Could not change the current working directory\n");
+            show_notification("Oops!", "ERROR : Could not change the current working directory");
         } else {
             this->folder_name = prev_path;
             ui->label->setText(prev_path);
@@ -139,12 +139,10 @@ void MainWindow::on_open_folder_btn_clicked(){
     this->folder_name = QFileDialog::getExistingDirectory(this, tr("Open folder"), "/home");
 
     if (!QDir::setCurrent(this->folder_name)) {
-        //this->ui->log_operations->appendPlainText("ERROR : Could not change the current working directory\n");
+        show_notification("Oops!", "Could not change the current working directory");
     } else {
-        //this->ui->log_operations->appendPlainText("Set folder_name : " + this->folder_name + "\n");
         this->settings->setValue("path", this->folder_name);
         this->ui->label->setText(this->folder_name);
-        //this->ui->log_operations->appendPlainText("Set label : " + this->folder_name + "\n");
         this->ui->menuBranches->clear();
 
         get_branches();
@@ -172,7 +170,10 @@ void MainWindow::on_send_btn_clicked() {
             this->process->start("git", args);
             this->process->waitForFinished(5000);
 
-            show_notification("Done!", "Commited: " + this->ui->commit_text->text());
+            if (this->current_output.size())
+                show_notification("Done!", "Commited: " + this->ui->commit_text->text());
+            else
+                show_notification("Oops!", "Something went wrong!");
 
 
         } else if (this->ui->operations_comboBox->currentText() == "Commit & push") {
@@ -191,6 +192,10 @@ void MainWindow::on_send_btn_clicked() {
                     args << "push" << "origin" << this->current_branch;
                     this->process->start("git", args);
                     this->process->waitForFinished(5000);
+                    if (this->current_output.size())
+                        show_notification("Done!", "Commited: " + this->ui->commit_text->text() + ";\nPushed: " + this->current_branch);
+                    else
+                        show_notification("Oops!", "Something went wrong!");
                     this->current_output.clear();
             }
         } else {
@@ -199,6 +204,7 @@ void MainWindow::on_send_btn_clicked() {
             this->process->start("git", args);
             this->process->waitForFinished(5000);
             this->current_output.clear();
+            show_notification("Done!", "Pushed: " + this->current_branch);
         }
     }
     this->current_output.clear();
