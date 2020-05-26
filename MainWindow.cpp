@@ -32,11 +32,12 @@ void MainWindow::check_git(){
     this->process->start("git", args);
     this->process->waitForFinished(5000);
 
-    if (this->current_output.isEmpty()) {
+    if (!this->current_output.isEmpty()) {
         this->current_output.clear();
         return;
     } else {
-        quint8 answer = QMessageBox::warning(this, "Git", "You don't have git installed on your PC.", "Install", "Quit");
+        quint8 answer = QMessageBox::warning(this, "Git", "You don't have git installed on your PC.",
+                                             "Install", "Quit");
         if (answer == 0)
             QDesktopServices::openUrl(QUrl("https://git-scm.com/", QUrl::TolerantMode));
         else
@@ -55,12 +56,18 @@ void MainWindow::get_branches(){
 
 void MainWindow::append_branches_to_menu(){
     this->current_output.removeAll("->");
-    this->current_output.removeAll("*");
 
-    for (QString& branch : this->current_output) {
-        branch.replace("remotes/", "");
-        branch.replace("origin/", "");
+    for (int i = 0; i < this->current_output.size(); ++i) {
+        this->current_output[i].replace("remotes/", "");
+        this->current_output[i].replace("origin/", "");
+
+        if(this->current_output[i] == "*") {
+            this->current_branch = this->current_output[i + 1];
+            this->ui->menubranch->setTitle(this->current_branch);
+        }
     }
+
+    this->current_output.removeAll("*");
 
     this->current_output.removeAll("HEAD");
     this->current_output.removeDuplicates();
