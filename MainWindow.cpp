@@ -113,26 +113,31 @@ void MainWindow::on_send_btn_clicked() {
 }
 
 void MainWindow::append_branches_to_menu(){
-    this->current_output.removeAll("->");
+    QStringList branches;
 
-    for (int i = 0; i < this->current_output.size(); ++i) {
-        this->current_output[i].replace("remotes/", "");
-        this->current_output[i].replace("origin/", "");
+    for (const QString& branch : this->current_output)
+        branches << branch.split(QRegExp(" "), QString::SkipEmptyParts);
 
-        if(this->current_output[i] == "*") {
-            this->current_branch = this->current_output[i + 1];
+    branches.removeAll("->");
+
+    for (int i = 0; i < branches.size(); ++i) {
+        branches[i].replace("remotes/", "");
+        branches[i].replace("origin/", "");
+
+        if(branches[i] == "*") {
+            this->current_branch = branches[i + 1];
             this->ui->menuBranches->setTitle(this->current_branch);
         }
     }
 
-    this->current_output.removeAll("*");
+    branches.removeAll("*");
 
-    this->current_output.removeAll("HEAD");
-    this->current_output.removeDuplicates();
+    branches.removeAll("HEAD");
+    branches.removeDuplicates();
 
     this->ui->menuBranches->clear();
 
-    for (const QString& branch : this->current_output) {
+    for (const QString& branch : branches) {
         QAction* action = new QAction(branch);
         action->setCheckable(true);
         this->ui->menuBranches->addAction(action);
@@ -273,7 +278,7 @@ void MainWindow::get_branches(){
 
 void MainWindow::read_output(){
     QString data =  QString::fromStdString(this->process->readAllStandardOutput().toStdString());
-    this->current_output = data.split(QRegExp("\n|\r\n|\r| "), QString::SkipEmptyParts);
+    this->current_output = data.split(QRegExp("\n|\r\n|\r"), QString::SkipEmptyParts);
 }
 
 void MainWindow::show_notification(const QString& notification_header,const QString& notification_body){
