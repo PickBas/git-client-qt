@@ -45,157 +45,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     }
 }
 
-void MainWindow::check_git(){
-    QStringList args;
-    args << "--version";
-    this->process->start("git", args);
-    this->process->waitForFinished(5000);
-
-    if (!this->current_output.isEmpty()) {
-        this->current_output.clear();
-        return;
-    } else {
-        quint8 answer = QMessageBox::warning(this, "Git", "You don't have git installed on your PC.",
-                                             "Install", "Quit");
-        if (!answer) {
-            QDesktopServices::openUrl(QUrl("https://git-scm.com/", QUrl::TolerantMode));
-            exit(0);
-        } else {
-            exit(0);
-        }
-    }
-}
-
-void MainWindow::get_branches(){
-    QStringList args;
-    args << "branch" << "-a";
-    this->process->start("git", args);
-    this->process->waitForFinished(5000);
-    append_branches_to_menu();
-
-}
-
-void MainWindow::append_branches_to_menu(){
-    this->current_output.removeAll("->");
-
-    for (int i = 0; i < this->current_output.size(); ++i) {
-        this->current_output[i].replace("remotes/", "");
-        this->current_output[i].replace("origin/", "");
-
-        if(this->current_output[i] == "*") {
-            this->current_branch = this->current_output[i + 1];
-            this->ui->menuBranches->setTitle(this->current_branch);
-        }
-    }
-
-    this->current_output.removeAll("*");
-
-    this->current_output.removeAll("HEAD");
-    this->current_output.removeDuplicates();
-
-    this->ui->menuBranches->clear();
-
-    for (const QString& branch : this->current_output) {
-        QAction* action = new QAction(branch);
-        action->setCheckable(true);
-        this->ui->menuBranches->addAction(action);
-    }
-
-    for (QAction* action : this->ui->menuBranches->actions()) {
-        connect(action, &QAction::triggered, this, [=]() {
-            this->checkout_branch(action->text());
-            this->current_output.clear();
-        });
-    }
-
-    set_checked_action();
-
-    this->current_output.clear();
-}
-
-void MainWindow::set_checked_action(){
-    for (QAction* action : this->ui->menuBranches->actions()) {
-        if(action->text() == this->current_branch) {
-            action->setChecked(true);
-        } else {
-            action->setChecked(false);
-        }
-    }
-}
-
-bool MainWindow::check_git_in_folder(){
-    QStringList args;
-
-    args << "status";
-    this->process->start("git", args);
-    this->process->waitForFinished(5000);
-
-    if (!this->current_output.isEmpty()) {
-        this->current_output.clear();
-        return true;
-    }
-
-    quint8 answer = QMessageBox::warning(this, "Git", this->folder_name + " has no .git",
-                                         "Initialize", "Change", "Quit");
-    if (!answer) {
-        args.clear();
-        args << "init";
-        this->process->start("git", args);
-        this->process->waitForFinished(5000);
-
-        QString notif_body;
-
-        for(const QString& word: current_output) {
-            notif_body += word + " ";
-        }
-
-        show_notification("Done!", notif_body);
-
-        this->current_output.clear();
-
-    } else if (answer == 1) {
-        this->current_output.clear();
-        on_open_folder_btn_clicked();
-    } else {
-        exit(0);
-    }
-    return true;
-}
-
-void MainWindow::show_notification(const QString& notification_header,const QString& notification_body){
-    this->tray->showMessage(notification_header, notification_body, QIcon(":/pic/Git-Icon.png"), 3000);
-}
-
-void MainWindow::checkout_branch(const QString &branch){
-    QStringList args;
-    args << "checkout" << branch;
-    this->process->start("git", args);
-    this->process->waitForFinished(5000);
-    this->current_branch = branch;
-    set_checked_action();
-    this->ui->menuBranches->setTitle(this->current_branch);
-}
-
 MainWindow::~MainWindow() {
     delete tray;
     delete process;
     delete settings;
     delete ui;
-}
-
-void MainWindow::on_open_folder_btn_clicked(){
-    this->folder_name = QFileDialog::getExistingDirectory(this, tr("Open folder"), "/home");
-
-    if (!QDir::setCurrent(this->folder_name)) {
-        show_notification("Oops!", "Could not change the current working directory");
-    } else {
-        this->settings->setValue("path", this->folder_name);
-        this->ui->label->setText(this->folder_name);
-        this->ui->menuBranches->clear();
-
-        get_branches();
-    }
-
 }
 
 void MainWindow::on_send_btn_clicked() {
@@ -258,9 +112,102 @@ void MainWindow::on_send_btn_clicked() {
     this->current_output.clear();
 }
 
-void MainWindow::read_output(){
-    QString data =  QString::fromStdString(this->process->readAllStandardOutput().toStdString());
-    this->current_output = data.split(QRegExp("\n|\r\n|\r| "), QString::SkipEmptyParts);
+void MainWindow::append_branches_to_menu(){
+    this->current_output.removeAll("->");
+
+    for (int i = 0; i < this->current_output.size(); ++i) {
+        this->current_output[i].replace("remotes/", "");
+        this->current_output[i].replace("origin/", "");
+
+        if(this->current_output[i] == "*") {
+            this->current_branch = this->current_output[i + 1];
+            this->ui->menuBranches->setTitle(this->current_branch);
+        }
+    }
+
+    this->current_output.removeAll("*");
+
+    this->current_output.removeAll("HEAD");
+    this->current_output.removeDuplicates();
+
+    this->ui->menuBranches->clear();
+
+    for (const QString& branch : this->current_output) {
+        QAction* action = new QAction(branch);
+        action->setCheckable(true);
+        this->ui->menuBranches->addAction(action);
+    }
+
+    for (QAction* action : this->ui->menuBranches->actions()) {
+        connect(action, &QAction::triggered, this, [=]() {
+            this->checkout_branch(action->text());
+            this->current_output.clear();
+        });
+    }
+
+    set_checked_action();
+
+    this->current_output.clear();
+}
+
+bool MainWindow::check_git_in_folder(){
+    QStringList args;
+
+    args << "status";
+    this->process->start("git", args);
+    this->process->waitForFinished(5000);
+
+    if (!this->current_output.isEmpty()) {
+        this->current_output.clear();
+        return true;
+    }
+
+    quint8 answer = QMessageBox::warning(this, "Git", this->folder_name + " has no .git",
+                                         "Initialize", "Change", "Quit");
+    if (!answer) {
+        args.clear();
+        args << "init";
+        this->process->start("git", args);
+        this->process->waitForFinished(5000);
+
+        QString notif_body;
+
+        for(const QString& word: current_output) {
+            notif_body += word + " ";
+        }
+
+        show_notification("Done!", notif_body);
+
+        this->current_output.clear();
+
+    } else if (answer == 1) {
+        this->current_output.clear();
+        on_open_folder_btn_clicked();
+    } else {
+        exit(0);
+    }
+    return true;
+}
+
+void MainWindow::check_git(){
+    QStringList args;
+    args << "--version";
+    this->process->start("git", args);
+    this->process->waitForFinished(5000);
+
+    if (!this->current_output.isEmpty()) {
+        this->current_output.clear();
+        return;
+    } else {
+        quint8 answer = QMessageBox::warning(this, "Git", "You don't have git installed on your PC.",
+                                             "Install", "Quit");
+        if (!answer) {
+            QDesktopServices::openUrl(QUrl("https://git-scm.com/", QUrl::TolerantMode));
+            exit(0);
+        } else {
+            exit(0);
+        }
+    }
 }
 
 void MainWindow::on_actionCreate_branch_triggered(){
@@ -280,4 +227,55 @@ void MainWindow::on_actionCreate_branch_triggered(){
             this->current_output.clear();
         }
     }
+}
+
+void MainWindow::on_open_folder_btn_clicked(){
+    this->folder_name = QFileDialog::getExistingDirectory(this, tr("Open folder"), "/home");
+
+    if (!QDir::setCurrent(this->folder_name)) {
+        show_notification("Oops!", "Could not change the current working directory");
+    } else {
+        this->settings->setValue("path", this->folder_name);
+        this->ui->label->setText(this->folder_name);
+        this->ui->menuBranches->clear();
+
+        get_branches();
+    }
+}
+
+void MainWindow::checkout_branch(const QString &branch){
+    QStringList args;
+    args << "checkout" << branch;
+    this->process->start("git", args);
+    this->process->waitForFinished(5000);
+    this->current_branch = branch;
+    set_checked_action();
+    this->ui->menuBranches->setTitle(this->current_branch);
+}
+
+void MainWindow::set_checked_action(){
+    for (QAction* action : this->ui->menuBranches->actions()) {
+        if(action->text() == this->current_branch) {
+            action->setChecked(true);
+        } else {
+            action->setChecked(false);
+        }
+    }
+}
+
+void MainWindow::get_branches(){
+    QStringList args;
+    args << "branch" << "-a";
+    this->process->start("git", args);
+    this->process->waitForFinished(5000);
+    append_branches_to_menu();
+}
+
+void MainWindow::read_output(){
+    QString data =  QString::fromStdString(this->process->readAllStandardOutput().toStdString());
+    this->current_output = data.split(QRegExp("\n|\r\n|\r| "), QString::SkipEmptyParts);
+}
+
+void MainWindow::show_notification(const QString& notification_header,const QString& notification_body){
+    this->tray->showMessage(notification_header, notification_body, QIcon(":/pic/Git-Icon.png"), 3000);
 }
