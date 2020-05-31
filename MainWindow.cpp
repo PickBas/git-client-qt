@@ -72,18 +72,26 @@ void MainWindow::get_branches(){
     this->process->start("git", args);
     this->process->waitForFinished(5000);
     append_branches_to_menu();
+    get_all_commits();
 
 }
 
 void MainWindow::append_branches_to_menu(){
     this->current_output.removeAll("->");
+    if (this->current_output[1].contains("(HEA")) {
+        for (int i = 0; i < 3; ++i)
+            this->current_output.removeAt(1);
+     }
 
     for (int i = 0; i < this->current_output.size(); ++i) {
         this->current_output[i].replace("remotes/", "");
         this->current_output[i].replace("origin/", "");
+        this->current_output[i].replace("HEAD -> ", "");
+        this->current_output[i].replace(" ", "");
 
-        if(this->current_output[i] == "*") {
-            this->current_branch = this->current_output[i + 1];
+        if(this->current_output[i][0] == "*") {
+            this->current_output[i].replace("*", "");
+            this->current_branch = this->current_output[i];
             this->ui->menuBranches->setTitle(this->current_branch);
         }
     }
@@ -92,7 +100,6 @@ void MainWindow::append_branches_to_menu(){
 
     this->current_output.removeAll("HEAD");
     this->current_output.removeDuplicates();
-
     this->ui->menuBranches->clear();
 
     for (const QString& branch : this->current_output) {
@@ -145,7 +152,7 @@ bool MainWindow::check_git_in_folder(){
 
         QString notif_body;
 
-        for(const QString& word: current_output) {
+        for(const QString& word: this->current_output) {
             notif_body += word + " ";
         }
 
@@ -162,6 +169,39 @@ bool MainWindow::check_git_in_folder(){
     return true;
 }
 
+void MainWindow::get_all_commits(){
+    //git log --all --decorate --oneline
+    QStringList args;
+    args << "log" << "--decorate" << "--oneline";
+    this->process->start("git", args);
+    this->process->waitForFinished(5000);
+    append_commits_to_menu();
+
+}
+
+void MainWindow::append_commits_to_menu(){
+    if (this->current_output[1][0] == '(') {
+        do {
+            this->current_output.removeAt(1);
+        } while(this->current_output[1][this->current_output[1].length() - 1] != ')');
+        this->current_output.removeAt(1);
+    }
+
+    for (const QString& commit : this->current_output) {
+        QAction* action = new QAction(commit);
+        this->ui->menuRevert->addAction(action);
+    }
+
+    for (QAction* action : this->ui->menuRevert->actions()) {
+        connect(action, &QAction::triggered, this, [=]() {
+            this->revert(action->text());
+            this->current_output.clear();
+        });
+    }
+
+    this->current_output.clear();
+}
+
 void MainWindow::show_notification(const QString& notification_header,const QString& notification_body){
     this->tray->showMessage(notification_header, notification_body, QIcon(":/pic/Git-Icon.png"), 3000);
 }
@@ -174,6 +214,15 @@ void MainWindow::checkout_branch(const QString &branch){
     this->current_branch = branch;
     set_checked_action();
     this->ui->menuBranches->setTitle(this->current_branch);
+}
+
+void MainWindow::revert(const QString& commit){
+    QString to_checkout = commit.split(QRegExp(" "), QString::SkipEmptyParts)[0];
+    qDebug() << to_checkout;
+    QStringList args;
+    args << "checkout" << to_checkout;
+    this->process->start("git", args);
+    this->process->waitForFinished(5000);
 }
 
 MainWindow::~MainWindow() {
@@ -260,7 +309,7 @@ void MainWindow::on_send_btn_clicked() {
 
 void MainWindow::read_output(){
     QString data =  QString::fromStdString(this->process->readAllStandardOutput().toStdString());
-    this->current_output = data.split(QRegExp("\n|\r\n|\r| "), QString::SkipEmptyParts);
+    this->current_output = data.split(QRegExp("\n|\r\n|\r"), QString::SkipEmptyParts);
 }
 
 void MainWindow::on_actionCreate_branch_triggered(){

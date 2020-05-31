@@ -40,6 +40,9 @@
      </item>
      <item>
       <widget class="QLineEdit" name="commit_text">
+       <property name="maxLength">
+        <number>72</number>
+       </property>
        <property name="placeholderText">
         <string>Commit</string>
        </property>
@@ -68,7 +71,7 @@
      <x>0</x>
      <y>0</y>
      <width>561</width>
-     <height>26</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menubranch">
@@ -80,7 +83,13 @@
       <string>Branches</string>
      </property>
     </widget>
+    <widget class="QMenu" name="menuRevert">
+     <property name="title">
+      <string>Revert</string>
+     </property>
+    </widget>
     <addaction name="menuBranches"/>
+    <addaction name="menuRevert"/>
     <addaction name="actionCreate_branch"/>
    </widget>
    <addaction name="menubranch"/>

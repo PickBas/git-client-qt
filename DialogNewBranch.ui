@@ -25,6 +25,9 @@
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
      <widget class="QLineEdit" name="branch_name">
+      <property name="maxLength">
+       <number>40</number>
+      </property>
       <property name="placeholderText">
        <string>branch...</string>
       </property>

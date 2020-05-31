@@ -14,8 +14,6 @@
 #include <QIcon>
 #include <DialogNewBranch.h>
 
-// TODO: push and commit sep
-
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -30,8 +28,11 @@ public:
     void append_branches_to_menu();
     void set_checked_action();
     bool check_git_in_folder();
+    void get_all_commits();
+    void append_commits_to_menu();
     void show_notification(const QString&,const QString&);
     void checkout_branch(const QString&);
+    void revert(const QString&);
     ~MainWindow();
 
 private slots:
@@ -47,6 +48,7 @@ private:
     Ui::MainWindow *ui;
     QSettings *settings;
     QProcess* process;
+    QMap <QString, QString> commits;
     QString current_branch;
     QStringList current_output;
     QString folder_name;
