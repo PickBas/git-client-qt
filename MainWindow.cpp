@@ -218,7 +218,6 @@ void MainWindow::checkout_branch(const QString &branch){
 
 void MainWindow::revert(const QString& commit){
     QString to_checkout = commit.split(QRegExp(" "), QString::SkipEmptyParts)[0];
-    qDebug() << to_checkout;
     QStringList args;
     args << "checkout" << to_checkout;
     this->process->start("git", args);
